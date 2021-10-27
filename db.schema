@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS users (
+	email text PRIMARY KEY,
+    public_key text
+);

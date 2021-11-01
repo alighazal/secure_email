@@ -1,2 +1,2 @@
      def test_function():
-         print(1)
+         print(2)

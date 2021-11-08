@@ -1,78 +1,55 @@
-import sqlite3
-from sqlite3 import Error
-
-
-def create_connection(db_file):
-    """ create a database connection to the SQLite database
-        specified by db_file
-    :param db_file: database file
-    :return: Connection object or None
-    """
-    conn = None
-    try:
-        conn = sqlite3.connect(db_file)
-        return conn
-    except Error as e:
-        print(e)
-
-    return conn
-
-def create_table(conn, create_table_sql):
-    """ create a table from the create_table_sql statement
-    :param conn: Connection object
-    :param create_table_sql: a CREATE TABLE statement
-    :return:
-    """
-    try:
-        c = conn.cursor()
-        c.execute(create_table_sql)
-    except Error as e:
-        print(e)
+from db import *
+import rsa
+import random
+import string
 
 def create_user(conn, user):
-    sql = ''' INSERT INTO users(email,public_key)
-              VALUES(?,?) '''
+    sql = ''' INSERT INTO users(email,public_key,challenge_token_digest,verification_status)
+              VALUES(?,?,?,?) '''
     cur = conn.cursor()
     cur.execute(sql, user)
     conn.commit()
     return cur.lastrowid
 
 def select_user_by_email(conn, email):
-
     cur = conn.cursor()
-    cur.execute("SELECT public_key FROM users WHERE email=?", (email,))
+    cur.execute("SELECT * FROM users WHERE email=?", (email,))
     rows = cur.fetchall()
-    for row in rows:
-        print(row)
+    return rows
 
 
-
-
-if __name__ == '__main__':
-    conn = create_connection(r".\sec_email.db")
-
-    sql_create_users_table = """ CREATE TABLE IF NOT EXISTS users (
-                                    email text PRIMARY KEY,
-                                    public_key text
-                                ); """
-    if conn is not None:
-    # create projects table
-        create_table(conn, sql_create_users_table)
-        user = ('mayyy2', '15d13sa5dsadsad531asd23sa1d23sad5sdsad2')
-        user_id = create_user(conn, user)
-        select_user_by_email(conn, "mayyy2")
-
-    else:
-        print("Error! cannot create the database connection.")
-
-
-
+import hashlib
     
 def sign_up(conn, email, public_key):
-    conn = create_connection(r".\sec_email.db")
-    user = (email, public_key)
+    challenge_token = prepare_challenge(email)
+    user = (email, public_key, str(challenge_token), 0)
     user_id = create_user(conn, user)
+    return user_id
 
-def look_up(email):
-    conn = create_connection(r".\sec_email.db")
-    select_user_by_email(conn, email)     
+def look_up(conn, email):
+    select_user_by_email(conn, email)    
+
+def prepare_challenge(email):
+    # generate token
+    res = ''.join(random.choices(string.ascii_uppercase +
+                             string.digits, k = 7))
+    return res
+    
+def get_challenge_token(conn, email):
+    selected_user = select_user_by_email(conn, email)
+    for row in selected_user:
+        public_key = row[1]
+        token =  row[2].encode('utf8')
+        encrypted_token = rsa.encrypt(token, public_key)
+        return encrypted_token
+
+def verify_user(conn, email, challenge_response):
+    selected_user = select_user_by_email(conn, email)
+    for row in selected_user:
+        public_key = row[1]
+        token =  row[2].encode('utf8')
+        if token == challenge_response:
+            run_script("UPDATE users SET verification_status = 1 WHERE email = '"+email+"';")
+            return 1
+        else:
+            return 0

@@ -27,6 +27,6 @@ def decrypt_message(sender_email, recipient_email, message_signature):
     (decrypted_message, message_hash) = decrypt_message_with_AES(encrypted_message, decrypted_symmetric_key)
     if(verfiy_message_integrity(decrypted_message, message_hash)):
         return (decrypted_message)
-    else
+    else:
         print("message corrupted")    
    

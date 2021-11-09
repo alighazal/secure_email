@@ -31,8 +31,7 @@ def look_up(conn, email):
 
 def prepare_challenge(email):
     # generate token
-    res = ''.join(random.choices(string.ascii_uppercase +
-                             string.digits, k = 7))
+    res = ''.join(random.choices(string.ascii_uppercase + string.digits, k = 7))
     return res
     
 def get_challenge_token(conn, email):

@@ -1,4 +1,6 @@
 CREATE TABLE IF NOT EXISTS users (
 	email text PRIMARY KEY,
-    public_key text
+    public_key text,
+    challenge_token_digest text,
+    verification_status integer
 );

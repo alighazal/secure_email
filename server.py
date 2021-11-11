@@ -1,5 +1,5 @@
 from db import *
-import rsa
+#import rsa
 import random
 import string
 
@@ -14,8 +14,8 @@ def create_user(conn, user):
 def select_user_by_email(conn, email):
     cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE email=?", (email,))
-    rows = cur.fetchall()
-    return rows
+    rows = cur.fetchall()[0]
+    return rows[1]
 
 
 import hashlib
@@ -26,7 +26,7 @@ def sign_up(conn, email, public_key):
     user_id = create_user(conn, user)
     return user_id
 
-def look_up(conn, email):
+def look_up(conn, email): #TODO 
     select_user_by_email(conn, email)    
 
 def prepare_challenge(email):

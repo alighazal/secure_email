@@ -1,40 +1,25 @@
-from send import encrypt_message
-from receive import decrypt_message
-#mstfrom typing_extensions import runtime
-import db
-from db import *
-from server import *
 import os
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 
-def register_user(conn):
-    print("Enter email: ")
-    email = input()
-            
-    #print("Enter public key:")
-    #public_key = input()
+from send import *
+from db import *
 
-    parent_dir = os.getcwd()
-    key_path = os.path.join(parent_dir, "key")
+def create_user(conn, user):
+    sql = ''' INSERT INTO users(email,public_key,challenge_token_digest,verification_status)
+              VALUES(?,?,?,?) '''
+    cur = conn.cursor()
+    cur.execute(sql, user)
+    conn.commit()
+    return cur.lastrowid
 
-    with open("./key/public_key.pem", "rb") as key_file:
-        public_key = serialization.load_pem_public_key(
-            key_file.read(),
-        )
 
-    public_key_pem = public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.PKCS1,
-    )
+def sign_up(conn, email, public_key):
+    #challenge_token = prepare_challenge(email)
+    user = (email, public_key, str("SSSSSSSSSSSSSSSSSSSSSSSSS"), 0)
+    user_id = create_user(conn, user)
+    return user_id
 
-    print(type(public_key_pem))
-    print(public_key_pem)
-        
-    print("Registering user....")
-    user_id = sign_up(conn, email, public_key_pem)
-            
-    print(f"Created user with id {user_id}")
 
 def generate_public_private_key_pair():
     ## key_sizes = [2048 * (1/2) , 2048, 2048 * 2] 
@@ -85,17 +70,60 @@ def generate_public_private_key_pair():
     print (f"Public Key: {public_key}")
     print (f"Private Key: {private_pem}")
 
+def register_user(conn):
+    print("Enter email: ")
+    email = input()
+            
+    #print("Enter public key:")
+    #public_key = input()
+
+    parent_dir = os.getcwd()
+    key_path = os.path.join(parent_dir, "key")
+
+    with open("./key/public_key.pem", "rb") as key_file:
+        public_key = serialization.load_pem_public_key(
+            key_file.read(),
+        )
+
+    public_key_pem = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.PKCS1,
+    )
+
+    print(type(public_key_pem))
+    print(public_key_pem)
+        
+    print("Registering user....")
+    user_id = sign_up(conn, email, public_key_pem)
+            
+    print(f"Created user with id {user_id}")
+
 def read_user_private_key():
-    #prompt from user to paste, or read from file path <-------------------------------------------------------------
 
-def encrypt(message, sender_email, recipient_email):
+    parent_dir = os.getcwd()
+    key_path = os.path.join(parent_dir, "key")
+
+    password = b"mypassword" 
+
+    with open("./key/private_key.pem", "rb") as key_file:
+        private_key = serialization.load_pem_private_key(
+            key_file.read(),
+            password=password,
+        )
+        return private_key
+
+def encrypt(conn, message, sender_email, recipient_email):
     sender_private_key = read_user_private_key()
-    encrypt_message(message, sender_email, recipient_email, sender_private_key)
+    (sender_email, recipient_email, encrypted_message, encrypted_key, signed_message) = encrypt_message(conn, message, sender_email, recipient_email, sender_private_key)
+    print (sender_email, recipient_email)
 
-def decrypt(file):
-    #extract sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key from file <----------------------------------------------------
-    recipient_private_key = read_user_private_key()
-    (verification_result, message) = decrypt_message(sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key)
+    with open( "./message.encrypted.txt", 'wb') as encrypted_msg:
+        encrypted_msg.write(encrypted_message)
+    with open( "./encrypted_key.txt", 'wb') as encrypted_msg:
+        encrypted_msg.write(encrypted_key)
+    with open( "./signed_message.txt", 'wb') as encrypted_msg:
+        encrypted_msg.write(signed_message)
+
 
 def console_menu():
     choice = ""
@@ -114,47 +142,29 @@ def console_menu():
 
         elif choice == "2": #sign up
             # TODO (OPTIONAL) SINGING-IN
+            print (conn)
             register_user(conn)
         
-        elif choice == "3": #verify association
-            print("Enter email: ")
-            email = input()
-            
-            print("Enter private key key:")
-            private_key = input()
-            
-            print("Getting challenge....")
-            token_challenge = get_challenge_token(conn, email)
-            print(f"Challeng token: {token_challenge}")
-            challenge_response = rsa.decrypt(token_challenge, private_key)
-            print(f"Challenge respone: {challenge_response}")
-            verifcation_result = verify_user(conn, email, challenge_response)
-            if verifcation_result == 1:
-                print(f"Server verified user association for: {email}")
-            else:
-                print(f"User association not verified for: {email}")
-        
         elif choice == "4": #send
-            #read message file path from user <-----------------------------------------------------------------------------------
+            # read message file path from user 
+            # -----------------------------------------------------------------------------------
             print("Message file path: ")
-            message_file_path = input()
-            #extract the message content
+            
+            message = open( "./message.txt", 'rb').read()
 
             print("Enter your email (sender email): ")
-            sender_email = input()
+            #sender_email = input()
+            sender_email = "may@mail.com"
 
             print("Enter the reciepient email: ")
-            recipient_email = input()
+            #recipient_email = input()
+            recipient_email = "ali@mail.com"
 
-            encrypt(message, sender_email, recipient_email)
+            encrypt(conn, message, sender_email, recipient_email)
 
-        elif choice == "5": #recieve  
-            #read file path from user, the file should contain all the required info <-----------------------------------------------------------
-            decrypt(recieved_file)
-        else:
-            print("Please choose a valid option")
 
 if __name__ == '__main__':
+
     conn = create_connection(r".\sec_email.db")
 
     sql_create_users_table = """ 
@@ -169,6 +179,3 @@ if __name__ == '__main__':
         #run_script(conn, "DROP TABLE users;")
         run_script(conn, sql_create_users_table)
         console_menu()
-
-    else:
-        print("Error! cannot create the database connection.")

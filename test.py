@@ -4,6 +4,7 @@ from cryptography.hazmat.primitives import serialization
 
 from send import *
 from db import *
+from receive import *
 
 def create_user(conn, user):
     sql = ''' INSERT INTO users(email,public_key,challenge_token_digest,verification_status)
@@ -110,7 +111,7 @@ def read_user_private_key():
             key_file.read(),
             password=password,
         )
-        return private_key
+    return private_key
 
 def encrypt(conn, message, sender_email, recipient_email):
     sender_private_key = read_user_private_key()
@@ -124,6 +125,34 @@ def encrypt(conn, message, sender_email, recipient_email):
     with open( "./signed_message.txt", 'wb') as encrypted_msg:
         encrypted_msg.write(signed_message)
 
+def decrypt(conn):
+    #extract sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key from file <----------------------------------------------------
+   
+    ## TODO move to a function
+    ## this is reading the private key of the recipiant "ali"
+    password = b"mypassword" 
+    with open("./key_1/private_key.pem", "rb") as key_file:
+        recipient_private_key = serialization.load_pem_private_key(
+            key_file.read(),
+            password=password,
+        )
+
+    sender_email = "may@mail.com"
+    recipient_email = "ali@mail.com"
+
+    with open("./message.encrypted.txt", "rb") as msg_encrypted:
+        encrypted_message = msg_encrypted.read()
+    
+    with open("./signed_message.txt", "rb") as msg_signed:
+        message_signature = msg_signed.read()
+    
+    with open("./encrypted_key.txt", "rb") as msg_encryption_key:
+        encrypted_message_key = msg_encryption_key.read()
+    
+    decrypted_message = decrypt_message(conn, sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key)
+    
+    return decrypted_message
+
 
 def console_menu():
     choice = ""
@@ -131,7 +160,7 @@ def console_menu():
         print("Choose one of the following options:")
         print("1- Generate key pair")
         print("2- Sign up as a new user")
-        print("3- Verify user email-key association")
+        print("3- Verify user email-key association") #TODO VERIFIY USER
         print("4- Send message")
         print("5- Decrypt message")
         print("6- Exit")
@@ -161,6 +190,13 @@ def console_menu():
             recipient_email = "ali@mail.com"
 
             encrypt(conn, message, sender_email, recipient_email)
+
+        elif choice == "5": #recieve  
+            #read file path from user, the file should contain all the required info <-----------------------------------------------------------
+            decrypted_message = decrypt(conn)
+
+            with open( "./message.decrypred.txt", 'wb') as decrypted_msg:
+                decrypted_msg.write(decrypted_message)
 
 
 if __name__ == '__main__':

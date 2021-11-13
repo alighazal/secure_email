@@ -142,8 +142,15 @@ def decrypt(conn):
             password=str.encode(password),
         )
 
-    sender_email = "may@mail.com"
-    recipient_email = "ali@mail.com"
+    print("What Was Your Email: ")
+    recipient_email = input()
+    
+    print("Who Do You think Have Sent this Email?: ")
+    sender_email = input()
+
+    #Example:
+    #sender_email = "may@mail.com"
+    #recipient_email = "ali@mail.com"
 
     with open("./message.encrypted.txt", "rb") as msg_encrypted:
         encrypted_message = msg_encrypted.read()

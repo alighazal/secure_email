@@ -134,13 +134,12 @@ def decrypt(conn):
     filepath = input()
 
     print("Enter Password: ")
-    filepath = input()
+    password = input()
 
-    password = b"mypassword" 
     with open(filepath, "rb") as key_file:
         recipient_private_key = serialization.load_pem_private_key(
             key_file.read(),
-            password=password,
+            password=str.encode(password),
         )
 
     sender_email = "may@mail.com"

@@ -23,15 +23,25 @@ def sign_up(conn, email, public_key):
 
 
 def generate_public_private_key_pair():
-    ## key_sizes = [2048 * (1/2) , 2048, 2048 * 2] 
-    # TODO MAKE DYNAMIC 
+
+    print ("""
+Choose Key Length:
+    - 1024
+    - 2048
+    - 4096 (Most Secure)
+        """)
+    keysize = input() ## Add Verification
 
     has_password = True
-    password = b"mypassword" # convert input to bytes
+
+    print("Enter Password: ")
+    password = input()
+    password = str.encode(password)
+    #password = b"mypassword" # convert input to bytes
 
     private_key = rsa.generate_private_key(
         public_exponent=65537,
-        key_size=2048*2
+        key_size=int(keysize)
     )
 
     if (has_password):
@@ -60,7 +70,7 @@ def generate_public_private_key_pair():
     try:
         os.mkdir(key_path)
     except:
-        print("file exits")
+        print("key folder already exits (will be overwritten)")
 
     with open( "./key/private_key.pem", 'wb') as pem_private_out:
         pem_private_out.write(private_pem)
@@ -74,9 +84,6 @@ def generate_public_private_key_pair():
 def register_user(conn):
     print("Enter email: ")
     email = input()
-            
-    #print("Enter public key:")
-    #public_key = input()
 
     parent_dir = os.getcwd()
     key_path = os.path.join(parent_dir, "key")
@@ -128,7 +135,6 @@ def encrypt(conn, message, sender_email, recipient_email):
 def decrypt(conn):
     #extract sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key from file <----------------------------------------------------
    
-    ## TODO move to a function
     ## this is reading the private key of the recipiant "ali"
     print("Enter Path of Private Key: ")
     filepath = input()
@@ -182,7 +188,6 @@ def console_menu():
             generate_public_private_key_pair()
 
         elif choice == "2": #sign up
-            # TODO (OPTIONAL) SINGING-IN
             register_user(conn)
         
         elif choice == "4": #send

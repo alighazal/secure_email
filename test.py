@@ -130,8 +130,14 @@ def decrypt(conn):
    
     ## TODO move to a function
     ## this is reading the private key of the recipiant "ali"
+    print("Enter Path of Private Key: ")
+    filepath = input()
+
+    print("Enter Password: ")
+    filepath = input()
+
     password = b"mypassword" 
-    with open("./key_1/private_key.pem", "rb") as key_file:
+    with open(filepath, "rb") as key_file:
         recipient_private_key = serialization.load_pem_private_key(
             key_file.read(),
             password=password,
@@ -171,7 +177,6 @@ def console_menu():
 
         elif choice == "2": #sign up
             # TODO (OPTIONAL) SINGING-IN
-            print (conn)
             register_user(conn)
         
         elif choice == "4": #send
@@ -179,15 +184,14 @@ def console_menu():
             # -----------------------------------------------------------------------------------
             print("Message file path: ")
             
-            message = open( "./message.txt", 'rb').read()
+            filepath = input()
+            message = open(filepath, 'rb').read()
 
             print("Enter your email (sender email): ")
-            #sender_email = input()
-            sender_email = "may@mail.com"
+            sender_email = input()
 
             print("Enter the reciepient email: ")
-            #recipient_email = input()
-            recipient_email = "ali@mail.com"
+            recipient_email = input()
 
             encrypt(conn, message, sender_email, recipient_email)
 
@@ -204,14 +208,13 @@ if __name__ == '__main__':
     conn = create_connection(r".\sec_email.db")
 
     sql_create_users_table = """ 
-                                    CREATE TABLE IF NOT EXISTS users (
-                                    email text PRIMARY KEY,
-                                    public_key text,
-                                    challenge_token_digest text,
-                                    verification_status integer
+                                CREATE TABLE IF NOT EXISTS users (
+                                email text PRIMARY KEY,
+                                public_key text,
+                                challenge_token_digest text,
+                                verification_status integer
                                 ); """
     if conn is not None:
     # create projects table
-        #run_script(conn, "DROP TABLE users;")
         run_script(conn, sql_create_users_table)
         console_menu()

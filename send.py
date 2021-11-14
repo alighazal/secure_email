@@ -27,8 +27,11 @@ def encrypt_message_with_AES(message, key):
 
     print ("hash --> ", message_digest )
 
-    f = Fernet(key)
+    with open( "./message.hash.txt", 'wb') as hashed_msg:
+        hashed_msg.write(message_digest)
 
+    f = Fernet(key)
+   
     ## TODO { Message + hash } in one file
     ## TODO handle hash
 

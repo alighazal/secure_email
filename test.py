@@ -132,6 +132,7 @@ def encrypt(conn, message, sender_email, recipient_email):
         encrypted_msg.write(encrypted_key)
     with open( "./signed_message.txt", 'wb') as encrypted_msg:
         encrypted_msg.write(signed_message)
+    
 
 def decrypt(conn):
     #extract sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key from file <----------------------------------------------------
@@ -168,7 +169,10 @@ def decrypt(conn):
     with open("./encrypted_key.txt", "rb") as msg_encryption_key:
         encrypted_message_key = msg_encryption_key.read()
     
-    decrypted_message = decrypt_message(conn, sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key)
+    with open("./message.hash.txt", "rb") as msg_hahsed:
+        messge_hash = msg_hahsed.read()
+    
+    decrypted_message = decrypt_message(conn, sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key,messge_hash)
     
     return decrypted_message
 

@@ -56,13 +56,20 @@ def decrypt_message_with_AES(encrypted_message, decrypted_symmetric_key):
     return decrypted_message
 
 def verfiy_message_integrity(decrypted_message, message_hash):
-    #hash the message
-    #compare hashes
-    #return true if match
-    #else, return false
-    return 0
+
+
+    digest = hashes.Hash(hashes.SHA256())
+    digest.update(decrypted_message)
+    message_digest = digest.finalize()
+
+    if (message_hash == message_digest ):
+        print( " Hashes Are Equal " )
+        return True
+    else:
+        print( " Hashes Are Not Equal !!!" )
+        return False
     
-def decrypt_message(conn, sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key):
+def decrypt_message(conn, sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key, hashed_message):
     sender_public_key = lookup_public_key_by_email(conn, sender_email)
 
     isVerified =  decrypt_signature(sender_public_key, message_signature, encrypted_message)
@@ -74,6 +81,9 @@ def decrypt_message(conn, sender_email, recipient_email, encrypted_message, mess
 
     decrypted_symmetric_key = decrypt_message_key_with_RSA(encrypted_message_key, recipient_private_key)
     decrypted_message = decrypt_message_with_AES(encrypted_message, decrypted_symmetric_key)
+
+    verfiy_message_integrity(decrypted_message, hashed_message )
+
 
     return (decrypted_message)
    

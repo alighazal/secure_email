@@ -3,6 +3,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.fernet import Fernet
+from cryptography.exceptions import InvalidSignature
 
 
 def lookup_public_key_by_email(conn, recipient_email):
@@ -14,17 +15,21 @@ def lookup_public_key_by_email(conn, recipient_email):
 
 def decrypt_signature(sender_public_key, message_signature, message ):
 
-    sender_public_key.verify(
+    try:
+        sender_public_key.verify(
 
-        message_signature,
-        message,
-        padding.PSS(
-            mgf=padding.MGF1(hashes.SHA256()),
-            salt_length=padding.PSS.MAX_LENGTH
-        ),
-        hashes.SHA256()
-    )
+            message_signature,
+            message,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+    except InvalidSignature:
+        return False
 
+    return True
     ## TODO EXCEPTION HANDLING --> IF NOT VERFIED RERTURN FALSE
     # ELSE ALWAYS RETURN TRUE 
 
@@ -60,17 +65,15 @@ def verfiy_message_integrity(decrypted_message, message_hash):
 def decrypt_message(conn, sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key):
     sender_public_key = lookup_public_key_by_email(conn, sender_email)
 
-    decrypt_signature(sender_public_key, message_signature, encrypted_message)
+    isVerified =  decrypt_signature(sender_public_key, message_signature, encrypted_message)
     #get the private key from ClientUI<-------------------------------------------------------------------------------------
     
+    if( not isVerified):
+        print("!! Message has an Invalid Signature !!")
+        return b""    
+
     decrypted_symmetric_key = decrypt_message_key_with_RSA(encrypted_message_key, recipient_private_key)
-    
     decrypted_message = decrypt_message_with_AES(encrypted_message, decrypted_symmetric_key)
-    
+
     return (decrypted_message)
-    
-    #if(verfiy_message_integrity(decrypted_message, message_hash)):
-    #    return (decrypted_message)
-    #else:
-    #    print("message corrupted")    
    

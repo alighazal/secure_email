@@ -1,4 +1,3 @@
 Changed in version 0.4: Added salt_length parameter.
 
 PSS (Probabilistic Signature Scheme) is a signature scheme defined in RFC 3447. It is more complex than PKCS1 but possesses a security proof. This is the recommended padding algorithm for RSA signatures. It cannot be used with RSA encryption.
-

@@ -111,12 +111,13 @@ def read_user_private_key():
     parent_dir = os.getcwd()
     key_path = os.path.join(parent_dir, "key")
 
-    password = b"mypassword" 
+    print("Enter Password: ")
+    password = input()
 
     with open("./key/private_key.pem", "rb") as key_file:
         private_key = serialization.load_pem_private_key(
             key_file.read(),
-            password=password,
+            password=str.encode(password),
         )
     return private_key
 
@@ -215,6 +216,15 @@ def console_menu():
 
 
 if __name__ == '__main__':
+
+    print ("""
+  ____                                  _____                    _  _ 
+ / ___|   ___   ___  _   _  _ __  ___  | ____| _ __ ___    __ _ (_)| |
+ \___ \  / _ \ / __|| | | || '__|/ _ \ |  _|  | '_ ` _ \  / _` || || |
+  ___) ||  __/| (__ | |_| || |  |  __/ | |___ | | | | | || (_| || || |
+ |____/  \___| \___| \__,_||_|   \___| |_____||_| |_| |_| \__,_||_||_|
+                                                                      
+    """)
 
     conn = create_connection(r".\sec_email.db")
 

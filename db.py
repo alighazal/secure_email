@@ -19,10 +19,11 @@ def run_script(conn, script):
     """ create a table from the create_table_sql statement
     :param conn: Connection object
     :param create_table_sql: a CREATE TABLE statement
-    :return:
+    :return: 
     """
     try:
         c = conn.cursor()
-        c.execute(script)
+        c.execute(script )
+        conn.commit()
     except Error as e:
         print(e)

@@ -6,21 +6,7 @@ from send import *
 from db import *
 from receive import *
 
-def create_user(conn, user):
-    sql = ''' INSERT INTO users(email,public_key,challenge_token_digest,verification_status)
-              VALUES(?,?,?,?) '''
-    cur = conn.cursor()
-    cur.execute(sql, user)
-    conn.commit()
-    return cur.lastrowid
-
-
-def sign_up(conn, email, public_key):
-    #challenge_token = prepare_challenge(email)
-    user = (email, public_key, str("SSSSSSSSSSSSSSSSSSSSSSSSS"), 0)
-    user_id = create_user(conn, user)
-    return user_id
-
+from server import create_user, sign_up, verify_user
 
 def generate_public_private_key_pair():
 
@@ -176,6 +162,38 @@ def decrypt(conn):
     
     return decrypted_message
 
+def verify (email):
+    with open("./challenge.txt", "rb") as challenge_file:
+        encrypted_challenge = challenge_file.read()
+    
+    print("Enter Path of Private Key: ")
+    filepath = input()
+
+    print("Enter Password: ")
+    password = input()
+
+    with open(filepath, "rb") as key_file:
+        private_key = serialization.load_pem_private_key(
+            key_file.read(),
+            password=str.encode(password),
+        )
+    
+    challenge_response = private_key.decrypt(
+        encrypted_challenge,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+
+    verify_user(conn, email, challenge_response)
+
+
+
+
+
+
 
 def console_menu():
     choice = ""
@@ -191,9 +209,14 @@ def console_menu():
 
         if choice == "1": #generate key pair
             generate_public_private_key_pair()
-
+            
         elif choice == "2": #sign up
             register_user(conn)
+
+        elif choice == "3": #verify association
+            print("Enter email: ")
+            email = input()
+            verify(email)
         
         elif choice == "4": #send
             # read message file path from user 

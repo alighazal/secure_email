@@ -10,24 +10,31 @@ from server import create_user, sign_up, verify_user
 
 def generate_public_private_key_pair():
 
-    print ("""
-Choose Key Length:
-    - 1024
-    - 2048
-    - 4096 (Most Secure)
-        """)
-    keysize = input() ## Add Verification
+    keysizes = [1024, 2048, 4096 ]
+    keysize = -1
+    has_password = True 
+    while (int(keysize) not in [0,1,2]):
+        print ("""
+    Choose Key Length (0,1,2):
+        0- 1024
+        1- 2048
+        2- 4096 (Most Secure)
+            """)
+        keysize = input() ## Add Verification
 
-    has_password = True
+
 
     print("Enter Password: ")
     password = input()
     password = str.encode(password)
     #password = b"mypassword" # convert input to bytes
 
+    print("Enter email: ")
+    email = input()
+
     private_key = rsa.generate_private_key(
         public_exponent=65537,
-        key_size=int(keysize)
+        key_size=int(keysizes[int(keysize)])
     )
 
     if (has_password):
@@ -49,7 +56,7 @@ Choose Key Length:
     )
 
 
-    directory = "key"
+    directory = email
     parent_dir = os.getcwd()
     key_path = os.path.join(parent_dir, directory)
 
@@ -58,10 +65,10 @@ Choose Key Length:
     except:
         print("key folder already exits (will be overwritten)")
 
-    with open( "./key/private_key.pem", 'wb') as pem_private_out:
+    with open( f"./{email}/private_key.pem", 'wb') as pem_private_out:
         pem_private_out.write(private_pem)
 
-    with open(  "./key/public_key.pem", 'wb') as pem_public_out:
+    with open(  f"./{email}/public_key.pem", 'wb') as pem_public_out:
         pem_public_out.write(public_key)
 
     print (f"Public Key: {public_key}")
@@ -74,7 +81,7 @@ def register_user(conn):
     parent_dir = os.getcwd()
     key_path = os.path.join(parent_dir, "key")
 
-    with open("./key/public_key.pem", "rb") as key_file:
+    with open(f"./{email}/public_key.pem", "rb") as key_file:
         public_key = serialization.load_pem_public_key(
             key_file.read(),
         )
@@ -92,35 +99,50 @@ def register_user(conn):
             
     print(f"Created user with id {user_id}")
 
-def read_user_private_key():
-
-    parent_dir = os.getcwd()
-    key_path = os.path.join(parent_dir, "key")
+def read_user_private_key(email):
 
     print("Enter Password: ")
     password = input()
 
-    with open("./key/private_key.pem", "rb") as key_file:
+    with open( f"./{email}/private_key.pem", "rb") as key_file:
         private_key = serialization.load_pem_private_key(
             key_file.read(),
             password=str.encode(password),
         )
     return private_key
 
-def encrypt(conn, message, sender_email, recipient_email):
-    sender_private_key = read_user_private_key()
-    (sender_email, recipient_email, encrypted_message, encrypted_key, signed_message) = encrypt_message(conn, message, sender_email, recipient_email, sender_private_key)
+def encrypt(conn, message_name , message, sender_email, recipient_email):
+    directory = message_name + "_" + sender_email + "_" + recipient_email
+    parent_dir = os.getcwd()
+    message_path = os.path.join(parent_dir, directory)
+
+    try:
+        os.mkdir(message_path)
+    except:
+        print("key folder already exits (will be overwritten)")
+
+    sender_private_key = read_user_private_key(sender_email)
+    (sender_email, recipient_email, encrypted_message, encrypted_key, signed_message) = encrypt_message(conn,directory,  message_name,  message, sender_email, recipient_email, sender_private_key)
     print (sender_email, recipient_email)
 
-    with open( "./message.encrypted.txt", 'wb') as encrypted_msg:
+    encryption_info = {
+        "sender_email": sender_email ,
+        "recipient_email": recipient_email ,
+        "file_name": message_name ,
+    }
+
+    with open(f"./{directory}/encryption_info.json", 'w') as outfile:
+        json.dump(encryption_info, outfile)
+
+    with open( f"./{directory}/{message_name}.encrypted", 'wb') as encrypted_msg:
         encrypted_msg.write(encrypted_message)
-    with open( "./encrypted_key.txt", 'wb') as encrypted_msg:
+    with open( f"./{directory}/encrypted_key.txt", 'wb') as encrypted_msg:
         encrypted_msg.write(encrypted_key)
-    with open( "./signed_message.txt", 'wb') as encrypted_msg:
+    with open( f"./{directory}/{message_name}.signed", 'wb') as encrypted_msg:
         encrypted_msg.write(signed_message)
     
 
-def decrypt(conn):
+def decrypt(conn,encrypted_message_path,  encrypted_message_filename, sender_email, recipient_email):
     #extract sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key from file <----------------------------------------------------
    
     ## this is reading the private key of the recipiant "ali"
@@ -135,35 +157,31 @@ def decrypt(conn):
             key_file.read(),
             password=str.encode(password),
         )
-
-    print("What Was Your Email: ")
-    recipient_email = input()
-    
-    print("Who Do You think Have Sent this Email?: ")
-    sender_email = input()
-
+   
     #Example:
     #sender_email = "may@mail.com"
     #recipient_email = "ali@mail.com"
 
-    with open("./message.encrypted.txt", "rb") as msg_encrypted:
+    with open(f"./{encrypted_message_path}/{encrypted_message_filename}.encrypted", "rb") as msg_encrypted:
         encrypted_message = msg_encrypted.read()
     
-    with open("./signed_message.txt", "rb") as msg_signed:
+    with open(f"./{encrypted_message_path}/{encrypted_message_filename}.signed", "rb") as msg_signed:
         message_signature = msg_signed.read()
     
-    with open("./encrypted_key.txt", "rb") as msg_encryption_key:
+    with open(f"./{encrypted_message_path}/encrypted_key.txt", "rb") as msg_encryption_key:
         encrypted_message_key = msg_encryption_key.read()
     
-    with open("./message.hash.txt", "rb") as msg_hahsed:
+    with open(f"./{encrypted_message_path}/{encrypted_message_filename}.hash", "rb") as msg_hahsed:
         messge_hash = msg_hahsed.read()
     
-    decrypted_message = decrypt_message(conn, sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key,messge_hash)
+    decrypted_message = decrypt_message(conn, sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key,messge_hash, encrypted_message_filename)
     
     return decrypted_message
 
 def verify (email):
-    with open("./challenge.txt", "rb") as challenge_file:
+    print ("please enter the path of the challenge file !! ")
+    challenge_filepath = input()
+    with open(f"./{challenge_filepath}", "rb") as challenge_file:
         encrypted_challenge = challenge_file.read()
     
     print("Enter Path of Private Key: ")
@@ -188,12 +206,6 @@ def verify (email):
     )
 
     verify_user(conn, email, challenge_response)
-
-
-
-
-
-
 
 def console_menu():
     choice = ""
@@ -226,19 +238,46 @@ def console_menu():
             filepath = input()
             message = open(filepath, 'rb').read()
 
+            message_name = filepath.split('/')[-1]
+            
+
             print("Enter your email (sender email): ")
             sender_email = input()
 
             print("Enter the reciepient email: ")
             recipient_email = input()
 
-            encrypt(conn, message, sender_email, recipient_email)
+            encrypt(conn, message_name, message, sender_email, recipient_email)
 
         elif choice == "5": #recieve  
             #read file path from user, the file should contain all the required info <-----------------------------------------------------------
-            decrypted_message = decrypt(conn)
+           
+            print("Enter Path of the folder containing your encrypted message: ")
+            encrypted_message_path = input()
 
-            with open( "./message.decrypred.txt", 'wb') as decrypted_msg:
+            try:
+                with open(f'./{encrypted_message_path}/encryption_info.json') as json_file:
+                    encryption_info = json.load(json_file)
+                    
+                    encrypted_message_filename = encryption_info["file_name"]
+                    sender_email = encryption_info["sender_email"]
+                    recipient_email = encryption_info["recipient_email"]
+            except:
+                print ("can't open the 'encryption_info' file that contains the encryption information ")
+                print ("please enter the the path of the needed files manually \n ")
+                
+                print ("enter the name of the encrypted file ")
+                encrypted_message_filename = input()
+                
+                print ("enter the sender email: ")
+                sender_email = input()
+                
+                print ("enter the recipient email: ")
+                recipient_email = input()
+
+            decrypted_message = decrypt(conn, encrypted_message_path, encrypted_message_filename, sender_email, recipient_email )
+            
+            with open( f"./{encrypted_message_filename}.decrypred", 'wb') as decrypted_msg:
                 decrypted_msg.write(decrypted_message)
 
 

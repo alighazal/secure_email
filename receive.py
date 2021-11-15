@@ -47,7 +47,7 @@ def decrypt_message_key_with_RSA(encrypted_key, recipient_private_key):
 
     return key_decrypted
 
-def decrypt_message_with_AES(encrypted_message, decrypted_symmetric_key):
+def decrypt_message_with_AES(encrypted_message, decrypted_symmetric_key, encrypted_message_filename):
 
     f = Fernet(decrypted_symmetric_key)
     decrypted_message = f.decrypt(encrypted_message)
@@ -69,7 +69,7 @@ def verfiy_message_integrity(decrypted_message, message_hash):
         print( " Hashes Are Not Equal !!!" )
         return False
     
-def decrypt_message(conn, sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key, hashed_message):
+def decrypt_message(conn, sender_email, recipient_email, encrypted_message, message_signature, encrypted_message_key, recipient_private_key, hashed_message, encrypted_message_filename):
     sender_public_key = lookup_public_key_by_email(conn, sender_email)
 
     isVerified =  decrypt_signature(sender_public_key, message_signature, encrypted_message)
@@ -80,7 +80,7 @@ def decrypt_message(conn, sender_email, recipient_email, encrypted_message, mess
         return b""    
 
     decrypted_symmetric_key = decrypt_message_key_with_RSA(encrypted_message_key, recipient_private_key)
-    decrypted_message = decrypt_message_with_AES(encrypted_message, decrypted_symmetric_key)
+    decrypted_message = decrypt_message_with_AES(encrypted_message, decrypted_symmetric_key, encrypted_message_filename)
 
     verfiy_message_integrity(decrypted_message, hashed_message )
 

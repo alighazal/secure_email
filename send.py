@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 
 from cryptography.hazmat.primitives import hashes
 
+import os
 
 import server
 
@@ -17,7 +18,7 @@ import json
 def generate_symmetric_key():
     return Fernet.generate_key()
 
-def encrypt_message_with_AES(message, key):
+def encrypt_message_with_AES(directory, message, message_name,  key):
     print("-->encrypt_message_with_AES")
     #encrypt the message digest with the message to verify integrity
     digest = hashes.Hash(hashes.SHA256())
@@ -27,7 +28,7 @@ def encrypt_message_with_AES(message, key):
 
     print ("hash --> ", message_digest )
 
-    with open( "./message.hash.txt", 'wb') as hashed_msg:
+    with open( f"./{directory}/{message_name}.hash", 'wb') as hashed_msg:
         hashed_msg.write(message_digest)
 
     f = Fernet(key)
@@ -76,10 +77,10 @@ def sign_message(encrypted_message, encrypted_key, private_key):
     return signed_message
 
 
-def encrypt_message(conn, message, sender_email, recipient_email, sender_private_key):
+def encrypt_message(conn, directory,  message_name,  message, sender_email, recipient_email, sender_private_key):
     print("-->encrypt_message")
     symmetric_key = generate_symmetric_key()
-    encrypted_message = encrypt_message_with_AES(message, symmetric_key)
+    encrypted_message = encrypt_message_with_AES(directory, message, message_name, symmetric_key)
     recipient_public_key = lookup_public_key_by_email(conn, recipient_email)
     encrypted_key = encrypt_message_key_with_RSA(symmetric_key, recipient_public_key)
     signed_message = sign_message(encrypted_message, encrypted_key, sender_private_key)

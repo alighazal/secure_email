@@ -17,7 +17,7 @@ def create_user(conn, user):
 
 def select_user_by_email(conn, email):
     cur = conn.cursor()
-    cur.execute("SELECT * FROM users WHERE email=? and verification_status = 1;", (email,))
+    cur.execute("SELECT * FROM users WHERE email=?;", (email,))
     rows = cur.fetchall()[0] 
     return rows[1]
 
